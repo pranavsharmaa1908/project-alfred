@@ -1,6 +1,8 @@
 .credentials/
 token.pickle
 main.jar
+mydatabase.db
+.kotlin/
 
 # Ignore Gradle project-specific cache directory
 .gradle

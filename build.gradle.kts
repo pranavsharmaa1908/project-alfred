@@ -4,3 +4,57 @@
  * This is a general purpose Gradle build.
  * Learn more about Gradle by exploring our Samples at https://docs.gradle.org/8.14.1/samples
  */
+
+plugins {
+    kotlin("jvm") version "2.1.20"
+    application
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation(kotlin("stdlib"))
+    implementation("org.xerial:sqlite-jdbc:3.45.2.0")
+    implementation("ch.qos.logback:logback-classic:1.4.11")
+
+}
+
+application {
+    mainClass.set("com.example.main.MainKt")
+}
+
+sourceSets {
+    main {
+        java.srcDirs("alfred/src")
+    }
+}
+
+tasks.named<Jar>("jar") {
+    manifest {
+        attributes["Main-Class"] = "com.example.main.MainKt"
+    }
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.register<Jar>("fatJar") {
+    archiveClassifier.set("all")
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+        attributes["Main-Class"] = "com.example.main.MainKt" // Adjust if needed
+    }
+
+    from(sourceSets.main.get().output)
+
+    dependsOn(configurations.runtimeClasspath)
+
+    from({
+        configurations.runtimeClasspath.get()
+            .filter { it.name.endsWith("jar") }
+            .map { zipTree(it) }
+    })
+}
