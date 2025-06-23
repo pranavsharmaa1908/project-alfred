@@ -2,6 +2,9 @@ package com.example.main
 
 import com.example.calendar.Event
 import com.example.calendar.Task
+import com.example.database.CreateDB
+import com.example.database.AddEvents
+import com.example.database.AddTasks
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.LocalDateTime
@@ -9,17 +12,9 @@ import java.sql.DriverManager
 
 fun main(){
 
-  val dbConn = DriverManager.getConnection("jdbc:sqlite:mydatabase.db") 
+  CreateDB()
 
-  dbConn.createStatement().execute("""
-    CREATE TABLE IF NOT EXISTS events (
-      name TEXT NOT NULL,
-      date TEXT NOT NULL, 
-      time TEXT NOT NULL,
-      datetime TEXT NOT NULL
-    )
-  """.trimIndent())
-
+  
   val event1 = Event(
     name = "Project Kickoff",
     date = LocalDate.of(2025, 7, 1),
@@ -32,6 +27,6 @@ fun main(){
     duedate = LocalDate.of(2025, 7, 1)
   )
 
-  println(event1)
-  println(task1)
+  AddEvents(event1)
+  AddTasks(task1)
 }
