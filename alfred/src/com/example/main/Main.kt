@@ -1,5 +1,7 @@
 package com.example.main
 
+import com.example.input.EventForm
+import com.example.input.TaskForm
 import com.example.calendar.Event
 import com.example.calendar.Task
 import com.example.database.CreateDB
@@ -13,20 +15,8 @@ import java.sql.DriverManager
 fun main(){
 
   CreateDB()
-
   
-  val event1 = Event(
-    name = "Project Kickoff",
-    date = LocalDate.of(2025, 7, 1),
-    time = LocalTime.of(10, 0),
-    datetime = LocalDateTime.of(2025, 7, 1, 10, 0)
-  )
+  EventForm()
 
-  val task1 = Task(
-    name = "Example",
-    duedate = LocalDate.of(2025, 7, 1)
-  )
-
-  AddEvents(event1)
-  AddTasks(task1)
+  TaskForm()
 }
