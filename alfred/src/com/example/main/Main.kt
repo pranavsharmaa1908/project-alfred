@@ -16,7 +16,13 @@ fun main(){
 
   CreateDB()
   
-  EventForm()
+  println("Add Task(1) or event(2): ")
 
-  TaskForm()
+  val inp = readLine()!!
+
+  when(inp){
+    "1" -> TaskForm()
+    "2" -> EventForm()
+  }
+
 }
