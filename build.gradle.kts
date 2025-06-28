@@ -18,6 +18,7 @@ dependencies {
     implementation(kotlin("stdlib"))
     implementation("org.xerial:sqlite-jdbc:3.45.2.0")
     implementation("ch.qos.logback:logback-classic:1.4.11")
+    implementation("de.kherud:llama:4.1.0")
 
 }
 
