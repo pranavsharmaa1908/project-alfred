@@ -33,7 +33,7 @@ fun main(){
   //  "2" -> EventForm()
   //}
   
-  val modelPath = "models/gemma-3-1b-it-Q8_0.gguf"
+  val modelPath = "models/gemma-2-2b-it-IQ3_M.gguf"
 
   val modelParams = ModelParameters()
     
