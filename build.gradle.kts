@@ -70,3 +70,5 @@ tasks.register<Jar>("fatJar") {
             .map { zipTree(it) }
     })
 }
+
+
