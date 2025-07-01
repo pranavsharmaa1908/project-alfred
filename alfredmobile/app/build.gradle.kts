@@ -1,12 +1,17 @@
+import org.gradle.api.tasks.Exec
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
+val jllamaLib = rootProject.file("java-llama.cpp")
+
 android {
     namespace = "com.example.alfred_mobile"
     compileSdk = 36
+
 
     defaultConfig {
         applicationId = "com.example.alfred_mobile"
@@ -16,6 +21,20 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            cmake {
+		// Add an flags if needed
+                abiFilters.clear()
+                abiFilters.add("arm64-v8a")
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("$jllamaLib/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
 
     buildTypes {
@@ -37,6 +56,25 @@ android {
     buildFeatures {
         compose = true
     }
+
+    sourceSets {
+        named("main") {
+            // Add source directory for java-llama.cpp
+            java.srcDir("$jllamaLib/src/main/java")
+        }
+    }
+}
+
+tasks.register<Exec>("compileLlamaIfMissing") {
+    group = "build"
+    description = "Compile java-llama.cpp with Maven if not already compiled"
+
+    onlyIf {
+        !file("$jllamaLib/target").exists()
+    }
+
+    workingDir = jllamaLib
+    commandLine = listOf("/usr/bin/mvn", "compile")
 }
 
 dependencies {

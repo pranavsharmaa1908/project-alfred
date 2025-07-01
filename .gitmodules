@@ -1,0 +1,3 @@
+[submodule "alfredmobile/java-llama.cpp"]
+	path = alfredmobile/java-llama.cpp
+	url = https://github.com/kherud/java-llama.cpp
