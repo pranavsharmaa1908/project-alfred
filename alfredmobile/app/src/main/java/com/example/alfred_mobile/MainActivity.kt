@@ -1,116 +1,136 @@
 package com.example.alfred_mobile
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import android.content.Context
-import java.io.File
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope            // coroutines scope for Activity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.example.alfred_mobile.ui.theme.AlfredmobileTheme
-import de.kherud.llama.InferenceParameters
-import de.kherud.llama.LlamaModel
-import de.kherud.llama.LlamaOutput
-import de.kherud.llama.ModelParameters
+import de.kherud.llama.*
 import de.kherud.llama.args.MiroStat
-import android.util.Log
 
-
+import java.io.File
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    enableEdgeToEdge()
 
-        Log.d("MainActivity", "Starting onCreate")
+    val threads = maxOf(1, Runtime.getRuntime().availableProcessors() - 1)
+    val modelAssetPath = "models/tinyllama-1.1b-chat-v1.0.Q2_K.gguf"
+    val modelFile = File(cacheDir, "tinyllama-1.1b-chat-v1.0.Q2_K.gguf")
+    copyAssetModelOnce(this, modelAssetPath, modelFile)
+    val modelPath = modelFile.absolutePath
 
-        val modelAssetPath = "models/gemma-2-2b-it-IQ3_M.gguf"
-        val modelFile = File(cacheDir, "gemma-2-2b-it-IQ3_M.gguf")
+    setContent {
+      AlfredmobileTheme {
+        Surface(modifier = Modifier.fillMaxSize()) {
+          AppContent(modelPath, threads)
+        }
+      }
+    }
+  }
+}
 
-        copyAssetModelOnce(this, modelAssetPath, modelFile)
+@Composable
+fun AppContent(ModelPath: String, Threads: Int) {
+  var promptState by remember { mutableStateOf("") }
+  var outputState = remember { mutableStateOf("") }
 
-        Log.d("MainActivity", "Model loaded on cache")
+  Column(modifier = Modifier
+  .fillMaxSize()
+  .padding(16.dp)) {
 
-        val modelPath = modelFile.absolutePath
+    OutlinedTextField(
+      value = promptState,
+      onValueChange = {
+        promptState = it
+        Log.d("MainActivity", "Prompt received: $it")
+      },
+      label = { Text("Enter Prompt") },
+      modifier = Modifier.fillMaxWidth()
+    )
 
-        val threads = maxOf(1, Runtime.getRuntime().availableProcessors() - 1)
+    Spacer(modifier = Modifier.height(16.dp))
+
+    ButtonWithCoroutine(
+      outputVar = outputState,
+      modelPath = ModelPath,
+      prompt = promptState,
+      threads = Threads,
+    )
+    Spacer(modifier = Modifier.height(16.dp))
+
+    Text(text = outputState.value, modifier = Modifier.fillMaxWidth())
+  }
+}
+
+fun copyAssetModelOnce(context: android.content.Context, assetName: String, destFile: File) {
+  if (!destFile.exists()) {
+    context.assets.open(assetName).use { input ->
+      destFile.outputStream().use { output ->
+        input.copyTo(output)
+      }
+    }
+  }
+}
+
+
+@Composable
+fun ButtonWithCoroutine(
+  outputVar: MutableState<String>,
+  modelPath: String,
+  prompt: String,
+  threads: Int,
+  modifier: Modifier = Modifier
+) {
+  val scope = rememberCoroutineScope()
+
+  Button(
+    onClick = {
+      scope.launch(Dispatchers.Default) {
+        Log.d("MainActivity", "Button clicked")
+        Log.d("MainActivity", "Using $threads threads")
 
         val modelParams = ModelParameters().apply {
-            setModel(modelPath)
-            setThreads(threads)
-            Log.d("MainActivity", "Using $threads threads")
+          setModel(modelPath)
+          setThreads(threads)
         }
 
-
-        val prompt = "User: answer in 5 words, describe moon."
-
-        Log.d("MainActivity", "prompt received")
-
         val inferParams = InferenceParameters(prompt)
-            .setTemperature(0.5f)
-            .setMiroStat(MiroStat.V2)
-            .setPenalizeNl(true)
-            .setStopStrings("User:")
-
-        Log.d("MainActivity", "inference set")
+        .setTemperature(0.5f)
+        .setMiroStat(MiroStat.V2)
+        .setPenalizeNl(true)
+        .setStopStrings("User:")
 
         val outputText = StringBuilder()
 
-        Log.d("MainActivity", "stringbuilder loaded, starting model...")
-
         LlamaModel(modelParams).use { model ->
-            for (output in model.generate(inferParams)) {
-                outputText.append(output)
-                Log.d("MainActivity", output.text)
-            }
+          for (output in model.generate(inferParams)) {
+            outputText.append(output)
+            Log.d("MainActivity", output.text)
+          }
         }
 
-
-
-        val finalOutput = outputText.toString()
-
-       
-        enableEdgeToEdge()
-        setContent {
-            AlfredmobileTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = finalOutput,
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
+        // Switch to main thread to update UI
+        withContext(Dispatchers.Main) {
+          outputVar.value = outputText.toString()
         }
-    }
+      }
+    },
+    modifier = modifier.fillMaxWidth()
+  ) {
+    Text("Generate")
+  }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "$name",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    AlfredmobileTheme {
-        Greeting("Android")
-    }
-}
-
-fun copyAssetModelOnce(context: Context, assetName: String, destFile: File) {
-    if (!destFile.exists()) {
-        context.assets.open(assetName).use { input ->
-            destFile.outputStream().use { output ->
-                input.copyTo(output)
-            }
-        }
-    }
-}
