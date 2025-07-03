@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "alfred-mobile"
 include(":app")
+include(":chatutils")
